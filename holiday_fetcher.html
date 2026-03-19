@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공휴일 조회기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161922;
+    --surface2: #1e2230;
+    --border: #2a2f3d;
+    --accent: #4f8ef7;
+    --text: #e2e6f0;
+    --text-dim: #7a8099;
+    --green: #4ec994;
+    --red: #e85d6e;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px;
+  }
+
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .sub { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 36px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 720px;
+    margin-bottom: 20px;
+  }
+
+  .input-row { display: flex; gap: 12px; align-items: flex-end; }
+
+  label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    padding: 10px 14px;
+    width: 110px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+  .key-wrap { flex: 1; }
+
+  button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 10px 24px;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  button:hover { opacity: 0.85; }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .progress-wrap { margin-top: 20px; display: none; }
+  .progress-label { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 6px; }
+  .progress-bar-bg { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-bar { background: var(--accent); height: 100%; width: 0%; border-radius: 4px; transition: width 0.3s ease; }
+
+  .month-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-top: 10px; }
+  .month-dot { height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .month-dot.done { background: var(--green); }
+  .month-dot.loading { background: var(--accent); }
+  .month-dot.error { background: var(--red); }
+
+  .error-msg { color: var(--red); font-size: 0.82rem; margin-top: 10px; display: none; }
+
+  .result-area { display: none; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .result-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: 10px;
+  }
+
+  .actions { display: flex; gap: 8px; align-items: center; }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 5px 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 400;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  .holiday-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+
+  .holiday-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  .holiday-name { font-weight: 500; font-size: 0.9rem; min-width: 110px; }
+
+  .holiday-dates {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+
+  .holiday-range {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 18px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  pre::-webkit-scrollbar { width: 6px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>🗓 공휴일 조회기</h1>
+<p class="sub">공공데이터포털 특일정보 API · 연간 공휴일 JSON 추출</p>
+
+<div class="card">
+  <div class="input-row">
+    <div>
+      <label>연도</label>
+      <input type="number" id="yearInput" value="2026" min="2000" max="2099" />
+    </div>
+    <div class="key-wrap">
+      <label>Service Key (디코딩된 키)</label>
+      <input type="text" id="keyInput" placeholder="공공데이터포털 API 서비스키 입력" />
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button id="fetchBtn" onclick="fetchHolidays()">조회</button>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label" id="progressLabel">월별 데이터 수집 중...</div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<div class="card result-area" id="resultArea">
+  <div class="result-header">
+    <div class="actions">
+      <span class="result-title">결과 JSON</span>
+      <span class="badge" id="countBadge">0 건</span>
+    </div>
+    <button class="copy-btn" onclick="copyJson()">📋 복사</button>
+  </div>
+  <div class="holiday-list" id="holidayList"></div>
+  <pre id="resultPre"></pre>
+</div>
+
+<script>
+async function fetchHolidays() {
+  const year = document.getElementById('yearInput').value;
+  const serviceKey = document.getElementById('keyInput').value.trim();
+
+  if (!serviceKey) { showError('Service Key를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+  hideError();
+  document.getElementById('resultArea').style.display = 'none';
+
+  // 진행 UI
+  const progressWrap = document.getElementById('progressWrap');
+  progressWrap.style.display = 'block';
+  document.getElementById('progressLabel').textContent = `${year}년 공휴일 수집 중...`;
+
+  const monthGrid = document.getElementById('monthGrid');
+  monthGrid.innerHTML = '';
+  const dots = [];
+  for (let i = 0; i < 12; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'month-dot';
+    monthGrid.appendChild(dot);
+    dots.push(dot);
+  }
+
+  const BASE = 'https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getHoliDeInfo';
+  const allItems = [];
+
+  for (let m = 1; m <= 12; m++) {
+    dots[m-1].classList.add('loading');
+    updateProgress(m - 1);
+
+    const month = String(m).padStart(2, '0');
+    const url = `${BASE}?ServiceKey=${encodeURIComponent(serviceKey)}&solYear=${year}&solMonth=${month}&_type=json&numOfRows=20`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const items = data?.response?.body?.items?.item;
+      if (items) {
+        const arr = Array.isArray(items) ? items : [items];
+        // isHoliday === 'Y' 인 것만
+        allItems.push(...arr.filter(it => it.isHoliday === 'Y'));
+      }
+
+      dots[m-1].classList.remove('loading');
+      dots[m-1].classList.add('done');
+    } catch (e) {
+      dots[m-1].classList.remove('loading');
+      dots[m-1].classList.add('error');
+      console.warn(`${month}월 오류:`, e.message);
+    }
+
+    updateProgress(m);
+    document.getElementById('progressLabel').textContent = `${m} / 12월 완료`;
+  }
+
+  btn.disabled = false;
+  progressWrap.style.display = 'none';
+
+  const grouped = groupHolidays(allItems);
+  renderResult(grouped, year);
+}
+
+function updateProgress(done) {
+  document.getElementById('progressBar').style.width = `${(done / 12) * 100}%`;
+}
+
+/**
+ * dateName이 같고 날짜가 연속되는 항목을 묶어
+ * { dateName, startDate, endDate } 로 반환
+ */
+function groupHolidays(items) {
+  // locdate 기준 오름차순 정렬
+  items.sort((a, b) => a.locdate - b.locdate);
+
+  const result = [];
+  let i = 0;
+
+  while (i < items.length) {
+    const cur = items[i];
+    let j = i + 1;
+
+    // 같은 dateName이면서 하루씩 연속인 항목을 묶음
+    while (
+      j < items.length &&
+      items[j].dateName === cur.dateName &&
+      isNextDay(items[j - 1].locdate, items[j].locdate)
+    ) {
+      j++;
+    }
+
+    result.push({
+      dateName: cur.dateName,
+      startDate: String(cur.locdate),
+      endDate: String(items[j - 1].locdate)
+    });
+
+    i = j;
+  }
+
+  return result;
+}
+
+function isNextDay(locdateA, locdateB) {
+  const a = toDate(String(locdateA));
+  const b = toDate(String(locdateB));
+  return (b - a) === 86400000; // 1일 = 86400000ms
+}
+
+function toDate(d) {
+  return new Date(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`);
+}
+
+function fmt(d) {
+  return `${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}`;
+}
+
+function dayCount(start, end) {
+  return Math.round((toDate(end) - toDate(start)) / 86400000) + 1;
+}
+
+function renderResult(grouped, year) {
+  document.getElementById('countBadge').textContent = `${grouped.length} 건`;
+  document.getElementById('resultPre').textContent = JSON.stringify(grouped, null, 2);
+
+  const list = document.getElementById('holidayList');
+  list.innerHTML = '';
+
+  grouped.forEach(h => {
+    const single = h.startDate === h.endDate;
+    const item = document.createElement('div');
+    item.className = 'holiday-item';
+    item.innerHTML = `
+      <span class="holiday-name">${h.dateName}</span>
+      <span class="holiday-dates">${fmt(h.startDate)}${single ? '' : ' ~ ' + fmt(h.endDate)}</span>
+      ${!single ? `<span class="holiday-range">${dayCount(h.startDate, h.endDate)}일</span>` : ''}
+    `;
+    list.appendChild(item);
+  });
+
+  document.getElementById('resultArea').style.display = 'block';
+}
+
+function copyJson() {
+  const text = document.getElementById('resultPre').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ 복사됨';
+    setTimeout(() => btn.textContent = '📋 복사', 1500);
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+</script>
+</body>
+</html>
