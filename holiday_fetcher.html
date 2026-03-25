@@ -420,6 +420,22 @@ function showError(msg) {
 function hideError() {
   document.getElementById('errorMsg').style.display = 'none';
 }
+
+// 초기 로드 시 config.js 가져오기 (로컬 파일 CORS 우회)
+window.addEventListener('DOMContentLoaded', () => {
+  const script = document.createElement('script');
+  script.src = 'config.js';
+  script.onload = () => {
+    if (window.CONFIG && window.CONFIG.serviceKey) {
+      document.getElementById('keyInput').value = window.CONFIG.serviceKey;
+      fetchHolidays();
+    }
+  };
+  script.onerror = () => {
+    console.log('config.js를 불러올 수 없습니다. 수동으로 키를 입력해주세요.');
+  };
+  document.body.appendChild(script);
+});
 </script>
 </body>
 </html>
